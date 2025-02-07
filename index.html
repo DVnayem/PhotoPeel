@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProtoPeel Online</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #4f46e5;
+            --accent: #10b981;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gradient: linear-gradient(135deg, #6366f1 0%, #10b981 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui;
+        }
+
+        body {
+            background: var(--light);
+            color: var(--dark);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 3rem 0;
+            background: var(--gradient);
+            color: white;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--primary);
+            border-radius: 1.5rem;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-container {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 500px;
+            object-fit: contain;
+            border-radius: 1rem;
+            display: none;
+            background: 
+                repeating-conic-gradient(#f1f5f9 0% 25%, transparent 0% 50%) 
+                50% / 20px 20px;
+        }
+
+        .processing-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .controls {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: var(--secondary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .download-options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        .quality-controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .slider-container {
+            margin: 1rem 0;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                padding: 2rem 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .image-preview {
+                height: 300px;
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ProtoPeel</h1>
+            <p>Premium AI-Powered Background Removal & Image Enhancement</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="preview-container">
+                    <div class="upload-zone" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt fa-3x" style="margin-bottom: 1rem;"></i>
+                        <h3 style="margin-bottom: 0.5rem;">Drag & Drop Image</h3>
+                        <p style="color: #64748b;">Supports PNG, JPG, WEBP (max 12MP)</p>
+                        <input type="file" id="fileInput" hidden accept="image/*">
+                    </div>
+                    <img id="originalPreview" class="image-preview">
+                    <div class="processing-overlay" id="processingOverlay">
+                        <div style="text-align: center;">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p style="margin-top: 1rem;">Processing Image...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quality-controls">
+                    <h3 style="margin-bottom: 1rem;">Enhancement Settings</h3>
+                    <div class="slider-container">
+                        <label>Edge Precision <span id="edgeValue">100</span>%</label>
+                        <input type="range" min="80" max="100" value="100" class="slider" id="edgeSlider">
+                    </div>
+                    <div class="slider-container">
+                        <label>Image Quality <span id="qualityValue">100</span>%</label>
+                        <input type="range" min="50" max="100" value="100" class="slider" id="qualitySlider">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Section -->
+            <div class="result-section">
+                <div class="preview-container">
+                    <img id="resultPreview" class="image-preview">
+                    <div class="toolbar">
+                        <button class="btn" id="processBtn">
+                            <i class="fas fa-magic"></i> Remove Background
+                        </button>
+                        <button class="btn" id="refineEdges">
+                            <i class="fas fa-brush"></i> Refine Edges
+                        </button>
+                    </div>
+                </div>
+
+                <div class="download-options">
+                    <button class="btn" id="downloadPng">
+                        <i class="fas fa-download"></i> PNG
+                    </button>
+                    <button class="btn" id="downloadJpeg">
+                        <i class="fas fa-download"></i> JPEG
+                    </button>
+                    <button class="btn" id="downloadWebp">
+                        <i class="fas fa-download"></i> WebP
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'fK4bu2hTAbu9yppsFR9vKHr8';
+        const API_URL = 'https://api.remove.bg/v1.0/removebg';
+
+        const elements = {
+            dropZone: document.getElementById('dropZone'),
+            fileInput: document.getElementById('fileInput'),
+            processBtn: document.getElementById('processBtn'),
+            originalPreview: document.getElementById('originalPreview'),
+            resultPreview: document.getElementById('resultPreview'),
+            processingOverlay: document.getElementById('processingOverlay'),
+            edgeSlider: document.getElementById('edgeSlider'),
+            qualitySlider: document.getElementById('qualitySlider'),
+            refineEdges: document.getElementById('refineEdges'),
+            downloadPng: document.getElementById('downloadPng'),
+            downloadJpeg: document.getElementById('downloadJpeg'),
+            downloadWebp: document.getElementById('downloadWebp')
+        };
+
+        let processedImage = null;
+        let originalFile = null;
+
+        // File Handling
+        const initFileHandling = () => {
+            // Click handler
+            elements.dropZone.addEventListener('click', () => elements.fileInput.click());
+            
+            // Drag and drop handlers
+            const handleDrag = (e) => {
+                e.preventDefault();
+                const primaryColor = getComputedStyle(document.documentElement)
+                    .getPropertyValue('--primary').trim();
+                elements.dropZone.style.borderColor = primaryColor;
+                elements.dropZone.style.background = 'rgba(99, 102, 241, 0.05)';
+            };
+
+            elements.dropZone.addEventListener('dragover', handleDrag);
+            elements.dropZone.addEventListener('dragleave', () => {
+                const primaryColor = getComputedStyle(document.documentElement)
+                    .getPropertyValue('--primary').trim();
+                elements.dropZone.style.borderColor = primaryColor;
+                elements.dropZone.style.background = 'white';
+            });
+            
+            elements.dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+            });
+
+            elements.fileInput.addEventListener('change', (e) => {
+                if(e.target.files[0]) handleFile(e.target.files[0]);
+            });
+        };
+
+        const handleFile = (file) => {
+            if (!file.type.startsWith('image/')) return showError('Invalid file type');
+            if (file.size > 15 * 1024 * 1024) return showError('File exceeds 15MB limit');
+
+            originalFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                elements.originalPreview.src = e.target.result;
+                elements.originalPreview.style.display = 'block';
+                elements.resultPreview.style.display = 'none';
+                processedImage = null;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // Image Processing
+        const processImage = async () => {
+            if (!originalFile) return showError('Please upload an image first');
+            
+            showProcessing();
+            
+            try {
+                const formData = new FormData();
+                formData.append('image_file', originalFile);
+                formData.append('size', 'regular');
+                formData.append('format', 'png');
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'X-Api-Key': API_KEY },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.errors[0].title);
+                }
+
+                const blob = await response.blob();
+                processedImage = URL.createObjectURL(blob);
+                elements.resultPreview.src = processedImage;
+                elements.resultPreview.style.display = 'block';
+                showSuccess('Background removed successfully!');
+            } catch (error) {
+                showError(`Processing failed: ${error.message}`);
+            } finally {
+                hideProcessing();
+            }
+        };
+
+        // Download Handlers
+        const initDownloadHandlers = () => {
+            elements.downloadPng.addEventListener('click', () => downloadImage('png'));
+            elements.downloadJpeg.addEventListener('click', () => downloadImage('jpeg'));
+            elements.downloadWebp.addEventListener('click', () => downloadImage('webp'));
+        };
+
+        const downloadImage = async (format) => {
+            if (!processedImage) return showError('No processed image available');
+            
+            try {
+                const img = await loadImage(processedImage);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // Add white background for non-transparent formats
+                if(format !== 'png') {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                ctx.drawImage(img, 0, 0);
+                
+                const quality = elements.qualitySlider.value / 100;
+                const url = canvas.toDataURL(`image/${format}`, quality);
+                triggerDownload(url, `processed.${format}`);
+            } catch (error) {
+                showError(`Download failed: ${error.message}`);
+            }
+        };
+
+        // Utility Functions
+        const showProcessing = () => {
+            elements.processingOverlay.style.display = 'flex';
+        };
+
+        const hideProcessing = () => {
+            elements.processingOverlay.style.display = 'none';
+        };
+
+        const showError = (message) => {
+            alert(`Error: ${message}`);
+        };
+
+        const showSuccess = (message) => {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.background = 'var(--accent)';
+            toast.style.color = 'white';
+            toast.style.padding = '1rem 2rem';
+            toast.style.borderRadius = '0.5rem';
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 3000);
+        };
+
+        const loadImage = (src) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = src;
+                img.onload = () => resolve(img);
+            });
+        };
+
+        const triggerDownload = (url, filename) => {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        // Initialize
+        initFileHandling();
+        initDownloadHandlers();
+        elements.processBtn.addEventListener('click', processImage);
+        elements.refineEdges.addEventListener('click', () => {
+            showSuccess('Edge refinement feature coming soon!');
+        });
+
+        // Slider Updates
+        elements.edgeSlider.addEventListener('input', (e) => {
+            document.getElementById('edgeValue').textContent = e.target.value;
+        });
+
+        elements.qualitySlider.addEventListener('input', (e) => {
+            document.getElementById('qualityValue').textContent = e.target.value;
+        });
+    </script>
+</body>
+</html>
